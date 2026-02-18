@@ -1,16 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { Editor } from '../editor/Editor';
 import { useEditorStore } from '../store/useEditorStore';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { useDebounce } from '../hooks/useDebounce';
 import { api } from '../lib/api';
-import { useAuthStore } from '../store/useAuthStore';
 
 export function EditorPage() {
-  const token = useAuthStore((s) => s.token);
-  const logout = useAuthStore((s) => s.logout);
-  const navigate = useNavigate();
   const {
     posts,
     currentPost,
@@ -120,25 +115,6 @@ export function EditorPage() {
             <span className="text-[11px] text-neutral-500">AI‑assisted long‑form writing</span>
           </div>
         </div>
-        {token ? (
-          <button
-            type="button"
-            onClick={() => {
-              logout();
-              navigate('/auth');
-            }}
-            className="text-xs sm:text-sm px-3 py-1.5 rounded-full border border-neutral-700/80 text-neutral-200 hover:text-neutral-50 hover:border-neutral-500 transition-colors"
-          >
-            Log out
-          </button>
-        ) : (
-          <Link
-            to="/auth"
-            className="text-xs sm:text-sm px-3 py-1.5 rounded-full border border-neutral-700/80 text-neutral-200 hover:text-neutral-50 hover:border-neutral-500 transition-colors"
-          >
-            Log in / Sign up
-          </Link>
-        )}
       </header>
       <div className="flex flex-1 overflow-hidden">
       {/* Sidebar - Drafts list */}

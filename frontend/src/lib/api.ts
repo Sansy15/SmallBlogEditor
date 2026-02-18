@@ -59,18 +59,6 @@ export const api = {
     delete: (id: number) =>
       fetchApi<{ ok: boolean }>(`/api/posts/${id}`, { method: 'DELETE' }),
   },
-  auth: {
-    signup: (email: string, password: string) =>
-      fetchApi<{ access_token: string }>('/api/auth/signup', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      }),
-    login: (email: string, password: string) =>
-      fetchApi<{ access_token: string }>('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      }),
-  },
   ai: {
     generate: (text: string, action: 'summary' | 'fix_grammar' | 'expand') =>
       fetchApi<{ result: string }>('/api/ai/generate', {

@@ -3,25 +3,20 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Post, PostStatus, User
+from models import Post, PostStatus
 from schemas import PostCreate, PostUpdate, PostResponse
-from auth import get_current_user_optional
 
 router = APIRouter(prefix="/api/posts", tags=["posts"])
 
 
 @router.post("/", response_model=PostResponse)
-def create_post(
-    data: PostCreate,
-    db: Session = Depends(get_db),
-    user: User | None = Depends(get_current_user_optional),
-):
+def create_post(data: PostCreate, db: Session = Depends(get_db)):
     """Create a new draft post."""
     post = Post(
         title=data.title or "Untitled",
         content=data.content,
         status=PostStatus.DRAFT,
-        user_id=user.id if user else None,
+        user_id=None,
     )
     db.add(post)
     db.commit()

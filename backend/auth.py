@@ -1,6 +1,7 @@
 """JWT authentication utilities."""
 from datetime import datetime, timedelta
 from typing import Optional
+import bcrypt
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
@@ -14,15 +15,30 @@ SECRET_KEY = "your-secret-key-change-in-production-use-env-var"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 security = HTTPBearer(auto_error=False)
+
+# bcrypt hash prefix (legacy users)
+BCRYPT_PREFIX = "$2"
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    """Verify password. Supports both Argon2 (new) and bcrypt (legacy) hashes."""
+    if not plain or not hashed:
+        return False
+    try:
+        if hashed.startswith(BCRYPT_PREFIX):
+            # Legacy bcrypt - use bcrypt lib directly (avoids passlib init bug)
+            pwd_bytes = plain.encode("utf-8")[:72]
+            return bcrypt.checkpw(pwd_bytes, hashed.encode("utf-8"))
+        # Argon2 (new hashes)
+        return pwd_context.verify(plain, hashed)
+    except Exception:
+        return False
 
 
 def get_password_hash(password: str) -> str:
+    """Hash password with Argon2 (new users)."""
     return pwd_context.hash(password)
 
 

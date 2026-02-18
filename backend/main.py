@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import engine, Base, get_db
-from routers import posts, auth, ai
+from routers import posts, ai
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -31,7 +31,6 @@ app.add_middleware(
 )
 
 app.include_router(posts.router)
-app.include_router(auth.router)
 app.include_router(ai.router)
 
 
