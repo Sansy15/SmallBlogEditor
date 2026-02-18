@@ -3,8 +3,10 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import {
   $getSelection,
   $isRangeSelection,
-  FORMAT_TEXT_COMMAND,
   $createParagraphNode,
+  getDOMSelection,
+  $createRangeSelectionFromDom,
+  $setSelection,
 } from 'lexical';
 import { $setBlocksType } from '@lexical/selection';
 import { $createHeadingNode } from '@lexical/rich-text';
@@ -48,13 +50,30 @@ export function Toolbar() {
   const [isItalic, setIsItalic] = useState(false);
   const [blockType, setBlockType] = useState<string>('paragraph');
 
-  const formatBold = useCallback(() => {
-    editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
-  }, [editor]);
+  const applyFormat = useCallback(
+    (format: 'bold' | 'italic') => {
+      editor.update(() => {
+        let selection = $getSelection();
+        if (!$isRangeSelection(selection)) {
+          const domSelection = getDOMSelection(window);
+          if (domSelection && domSelection.rangeCount > 0) {
+            const rangeSelection = $createRangeSelectionFromDom(domSelection, editor);
+            if (rangeSelection) {
+              $setSelection(rangeSelection);
+              selection = rangeSelection;
+            }
+          }
+        }
+        if ($isRangeSelection(selection)) {
+          selection.formatText(format);
+        }
+      });
+    },
+    [editor]
+  );
 
-  const formatItalic = useCallback(() => {
-    editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
-  }, [editor]);
+  const formatBold = useCallback(() => applyFormat('bold'), [applyFormat]);
+  const formatItalic = useCallback(() => applyFormat('italic'), [applyFormat]);
 
   const formatHeading = useCallback(
     (tag: HeadingTagType) => {
