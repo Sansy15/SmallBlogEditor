@@ -28,6 +28,7 @@ function ToolbarButton({
   return (
     <button
       type="button"
+      onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       title={title}
       className={`px-2.5 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-150 ${
