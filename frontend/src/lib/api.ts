@@ -1,5 +1,5 @@
 /** API client for Smart Blog Editor backend */
-const API_BASE = import.meta.env.VITE_API_URL || '';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://smart-blog-editor-api.onrender.com';
 
 function getToken(): string | null {
   return localStorage.getItem('token');
@@ -16,12 +16,19 @@ async function fetchApi<T>(
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || String(err) || 'Request failed');
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || String(err) || 'Request failed');
+    }
+    return res.json();
+  } catch (error) {
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Failed to connect to server. Please check your connection.');
+    }
+    throw error;
   }
-  return res.json();
 }
 
 export const api = {
