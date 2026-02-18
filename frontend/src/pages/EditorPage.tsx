@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Editor } from '../editor/Editor';
 import { useEditorStore } from '../store/useEditorStore';
 import { useAutoSave } from '../hooks/useAutoSave';
+import { useDebounce } from '../hooks/useDebounce';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -20,8 +21,37 @@ export function EditorPage() {
     addPost,
   } = useEditorStore();
   const [search, setSearch] = useState('');
+  const [titleValue, setTitleValue] = useState('');
 
   useAutoSave();
+
+  // Sync title value with currentPost
+  useEffect(() => {
+    if (currentPost) {
+      setTitleValue(currentPost.title || '');
+    }
+  }, [currentPost?.id, currentPost?.title]);
+
+  // Auto-save title changes
+  const saveTitle = async () => {
+    if (!currentPost || titleValue === currentPost.title) return;
+    try {
+      const updated = await api.posts.update(currentPost.id, { title: titleValue });
+      useEditorStore.getState().updatePostInList(currentPost.id, {
+        title: updated.title,
+        updated_at: updated.updated_at,
+      });
+    } catch (e) {
+      console.error('Failed to save title:', e);
+    }
+  };
+
+  const debouncedSaveTitle = useDebounce(saveTitle, 2000);
+
+  useEffect(() => {
+    if (!currentPost || titleValue === currentPost.title) return;
+    debouncedSaveTitle();
+  }, [titleValue]);
 
   useEffect(() => {
     api.posts.list().then(setPosts).catch(console.error);
@@ -209,37 +239,36 @@ export function EditorPage() {
           </div>
         ) : (
           <div className="max-w-4xl mx-auto space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <input
-                type="text"
-                value={currentPost.title || ''}
-                onChange={(e) =>
-                  useEditorStore
-                    .getState()
-                    .updatePostInList(currentPost.id, { title: e.target.value })
-                }
-                placeholder="Untitled"
-                className="flex-1 bg-transparent border-none text-2xl sm:text-3xl font-semibold text-neutral-50 placeholder:text-neutral-600 focus:outline-none focus:ring-0"
-              />
-              <div className="flex items-center gap-3">
-                <span className="text-[11px] sm:text-xs text-neutral-500">
-                  {isSaving
-                    ? 'Saving…'
-                    : lastSavedAt
-                    ? 'Saved ✓'
-                    : ''}
-                </span>
-                {currentPost.status === 'draft' && (
-                  <button
-                    onClick={handlePublish}
-                    className="text-xs sm:text-sm px-3 py-1.5 rounded-full bg-emerald-500 text-white hover:bg-emerald-400 transition-colors"
-                  >
-                    Publish
-                  </button>
-                )}
-              </div>
-            </div>
+            <input
+              type="text"
+              value={titleValue}
+              onChange={(e) => {
+                setTitleValue(e.target.value);
+                useEditorStore
+                  .getState()
+                  .updatePostInList(currentPost.id, { title: e.target.value });
+              }}
+              placeholder="Untitled"
+              className="w-full bg-transparent border-none text-2xl sm:text-3xl font-semibold text-neutral-50 placeholder:text-neutral-600 focus:outline-none focus:ring-0"
+            />
             <Editor postId={currentPost.id} />
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-[11px] sm:text-xs text-neutral-500">
+                {isSaving
+                  ? 'Saving…'
+                  : lastSavedAt
+                  ? '✓ Saved ✓'
+                  : ''}
+              </span>
+              {currentPost.status === 'draft' && (
+                <button
+                  onClick={handlePublish}
+                  className="text-xs sm:text-sm px-4 py-2 rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 text-white hover:from-violet-400 hover:to-indigo-400 transition-colors shadow-lg shadow-violet-500/25"
+                >
+                  Publish
+                </button>
+              )}
+            </div>
           </div>
         )}
       </main>
